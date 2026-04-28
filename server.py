@@ -1,6 +1,8 @@
 import os
+import uvicorn
 import httpx
 from mcp.server.fastmcp import FastMCP
+from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from dotenv import load_dotenv
@@ -145,4 +147,12 @@ def backlinks_summary(target: str) -> dict:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http", host="0.0.0.0", port=PORT)
+    app = mcp.streamable_http_app()
+    app = CORSMiddleware(
+        app,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+        allow_credentials=False,
+    )
+    uvicorn.run(app, host="0.0.0.0", port=PORT)
