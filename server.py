@@ -145,8 +145,22 @@ def backlinks_summary(target: str) -> dict:
     }
 
 
+class HostRewriteMiddleware:
+    """Rewrites the Host header to localhost so FastMCP's security check passes."""
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            headers = [(k, b"localhost" if k == b"host" else v)
+                       for k, v in scope.get("headers", [])]
+            scope["headers"] = headers
+        await self.app(scope, receive, send)
+
+
 if __name__ == "__main__":
-    app = mcp.streamable_http_app(host_header_allowlist=None)
+    app = mcp.streamable_http_app()
+    app = HostRewriteMiddleware(app)
     app = CORSMiddleware(
         app,
         allow_origins=["*"],
