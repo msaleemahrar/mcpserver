@@ -146,7 +146,7 @@ def backlinks_summary(target: str) -> dict:
 
 
 if __name__ == "__main__":
-    app = mcp.streamable_http_app()
+    app = mcp.streamable_http_app(host_header_allowlist=None)
     app = CORSMiddleware(
         app,
         allow_origins=["*"],
