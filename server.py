@@ -11,6 +11,7 @@ load_dotenv()
 
 BASE_URL = "https://api.dataforseo.com"
 AUTH = (os.environ["DATAFORSEO_LOGIN"], os.environ["DATAFORSEO_PASSWORD"])
+MCP_TOKEN = os.environ.get("MCP_TOKEN", "")
 
 PORT = int(os.environ.get("PORT", 8000))
 
@@ -20,6 +21,23 @@ mcp = FastMCP("Keyword Research")
 @mcp.custom_route("/health", methods=["GET"])
 async def health(request: Request) -> JSONResponse:
     return JSONResponse({"status": "ok"})
+
+
+class BearerAuthMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            path = scope.get("path", "")
+            if path != "/health":
+                headers = dict(scope.get("headers", []))
+                auth = headers.get(b"authorization", b"").decode()
+                if not MCP_TOKEN or auth != f"Bearer {MCP_TOKEN}":
+                    response = JSONResponse({"error": "Unauthorized"}, status_code=401)
+                    await response(scope, receive, send)
+                    return
+        await self.app(scope, receive, send)
 
 
 def _post(path: str, payload: list) -> dict:
@@ -148,6 +166,7 @@ def backlinks_summary(target: str) -> dict:
 
 if __name__ == "__main__":
     app = mcp.streamable_http_app()
+    app = BearerAuthMiddleware(app)
     app = CORSMiddleware(
         app,
         allow_origins=["*"],
