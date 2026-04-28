@@ -1,6 +1,8 @@
 import os
 import httpx
 from mcp.server.fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,6 +13,11 @@ AUTH = (os.environ["DATAFORSEO_LOGIN"], os.environ["DATAFORSEO_PASSWORD"])
 PORT = int(os.environ.get("PORT", 8000))
 
 mcp = FastMCP("Keyword Research")
+
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health(request: Request) -> JSONResponse:
+    return JSONResponse({"status": "ok"})
 
 
 def _post(path: str, payload: list) -> dict:
